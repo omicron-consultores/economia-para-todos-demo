@@ -11,24 +11,23 @@ import {
   ChevronDown,
   CreditCard,
   GraduationCap,
-  IdCard,
   Landmark,
-  Phone,
   QrCode,
   RotateCcw,
-  Settings,
+  Settings as SettingsIcon,
   ShieldCheck,
   Signal,
-  SlidersHorizontal,
   Store,
   UserRound,
-  Upload,
   Wifi,
 } from 'lucide-react'
 import { BoliviaMap } from '@/components/bolivia-map'
-import { Opportunities, Protection, Training } from '@/components/mobile-benefits'
-import { boliviaLocations, getMunicipalities } from '@/lib/bolivia-locations'
-import { createEmptyRegistration, createInitialCourseCompletion, demoRegistration, type CourseCompletion, type RegistrationValues } from '@/lib/mobile-details'
+import { Credit, Opportunities, Protection, Training } from '@/components/mobile-benefits'
+import { Settings } from '@/components/mobile-settings'
+import { cutOffLabel, FormalizationFunnel, KpiGrid } from '@/components/dashboard-summary'
+import { RegistrationFlow } from '@/components/registration-flow'
+import { createInitialCourseCompletion, type CourseCompletion } from '@/lib/mobile-details'
+import { contributionFor, demoRegistration, parseAmount, type RegistrationValues } from '@/lib/registration'
 import { getPerformanceBreakdown, getPerformanceMetrics } from '@/lib/performance-details'
 import {
   ageGroups,
@@ -52,6 +51,7 @@ type MobileScreen =
   | 'opportunities'
   | 'profile'
   | 'settings'
+  | 'timeskip'
 type DashboardTab = 'Resumen' | 'Desempeño'
 type Filters = { department: string; sector: string; sex: string; ageGroup: string }
 
@@ -109,7 +109,7 @@ function PhoneFrame({ children, activeTab, showNavigation, onTab, screen }: Phon
         <nav className="mobile-nav" aria-label="Navegación principal">
           <button type="button" onClick={() => onTab('home')} className={activeTab === 'home' ? 'active' : ''}><Landmark size={19} /><span>Inicio</span></button>
           <button type="button" onClick={() => onTab('profile')} className={activeTab === 'profile' ? 'active' : ''}><UserRound size={19} /><span>Perfil</span></button>
-          <button type="button" onClick={() => onTab('settings')} className={activeTab === 'settings' ? 'active' : ''}><Settings size={19} /><span>Ajustes</span></button>
+          <button type="button" onClick={() => onTab('settings')} className={activeTab === 'settings' ? 'active' : ''}><SettingsIcon size={19} /><span>Ajustes</span></button>
         </nav>
       )}
     </div>
@@ -152,145 +152,21 @@ function Landing({ go }: { go: (screen: MobileScreen) => void }) {
   )
 }
 
-function Registration({ onRegister }: { onRegister: (values: RegistrationValues) => void }) {
-  const [values, setValues] = useState(createEmptyRegistration)
-  const [ciDocument, setCiDocument] = useState<File | 'demo' | null>(null)
-  const [documentError, setDocumentError] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const municipalities = getMunicipalities(values.department)
-  const valid = Object.values(values).every((value) => value.trim().length > 0) && ciDocument !== null
+const duration = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+const longDate = (iso: string) => new Intl.DateTimeFormat('es-BO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`))
 
-  const fillDemo = () => {
-    setValues(demoRegistration)
-    setCiDocument('demo')
-    setDocumentError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const update = (key: keyof typeof values, value: string) => {
-    setValues((current) => ({
-      ...current,
-      [key]: value,
-      ...(key === 'department' ? { municipality: '' } : {}),
-    }))
-  }
-
-  return (
-    <div className="mobile-screen">
-      <h2>Crear mi Libreta Digital</h2>
-      <p className="screen-subtitle">Paso 1 de 1 · Datos básicos</p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (valid) onRegister(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()])) as RegistrationValues)
-        }}
-        className="form-stack"
-      >
-        <label>
-          Nombre
-          <input required autoComplete="given-name" value={values.firstName} onChange={(event) => update('firstName', event.target.value)} />
-        </label>
-        <label>
-          Apellido
-          <input required autoComplete="family-name" value={values.lastName} onChange={(event) => update('lastName', event.target.value)} />
-        </label>
-        <label>
-          Cédula
-          <input required inputMode="numeric" autoComplete="off" value={values.cedula} onChange={(event) => update('cedula', event.target.value)} />
-        </label>
-        <div className="ci-field">
-          <span id="ci-upload-label">Subir C.I.</span>
-          <label className={`ci-upload ${ciDocument ? 'has-document' : ''}`}>
-            <input
-              ref={fileInputRef}
-              id="ci-file"
-              type="file"
-              accept="image/*,.pdf"
-              required={!ciDocument}
-              aria-labelledby="ci-upload-label"
-              aria-describedby="ci-upload-hint"
-              aria-invalid={Boolean(documentError)}
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                setDocumentError('')
-                if (!file) return
-                if ((!file.type.startsWith('image/') && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) || file.size > 10 * 1024 * 1024) {
-                  setDocumentError('Selecciona una imagen o PDF de hasta 10 MB.')
-                  setCiDocument(null)
-                  event.target.value = ''
-                  return
-                }
-                setCiDocument(file)
-              }}
-            />
-            {ciDocument ? <IdCard size={26} /> : <Upload size={23} />}
-            <span className="ci-upload-copy">
-              <strong>{ciDocument === 'demo' ? 'C.I. de María Quispe · ejemplo' : ciDocument ? ciDocument.name : 'Seleccionar carnet de identidad'}</strong>
-              <small>{ciDocument === 'demo' ? 'Documento de ejemplo listo para continuar' : ciDocument ? 'Archivo seleccionado · pulsa para cambiar' : 'Foto o PDF de tu carnet'}</small>
-            </span>
-            {ciDocument && <Check size={18} className="ci-upload-check" />}
-          </label>
-          <div className="ci-upload-footer">
-            <small id="ci-upload-hint">Imagen o PDF · hasta 10 MB</small>
-            {ciDocument && <button type="button" onClick={() => {
-              setCiDocument(null)
-              setDocumentError('')
-              if (fileInputRef.current) fileInputRef.current.value = ''
-            }}>Quitar archivo</button>}
-          </div>
-          {documentError && <p className="field-error" role="alert">{documentError}</p>}
-        </div>
-        <label>
-          Departamento
-          <div className="form-select">
-            <select required value={values.department} onChange={(event) => update('department', event.target.value)}>
-              <option value="" disabled>Selecciona un departamento</option>
-              {boliviaLocations.map((department) => <option key={department.name}>{department.name}</option>)}
-            </select>
-            <ChevronDown size={16} />
-          </div>
-        </label>
-        <label>
-          Municipio
-          <div className="form-select">
-            <select
-              required
-              disabled={!values.department}
-              value={values.municipality}
-              onChange={(event) => update('municipality', event.target.value)}
-            >
-              <option value="" disabled>{values.department ? 'Selecciona un municipio' : 'Selecciona primero un departamento'}</option>
-              {municipalities.map((municipality) => <option key={municipality}>{municipality}</option>)}
-            </select>
-            <ChevronDown size={16} />
-          </div>
-        </label>
-        <label>
-          Actividad económica
-          <input required value={values.activity} onChange={(event) => update('activity', event.target.value)} />
-        </label>
-        <label>
-          Ventas mensuales aproximadas
-          <input required inputMode="numeric" value={values.sales} onChange={(event) => update('sales', event.target.value)} />
-        </label>
-        <label>
-          Teléfono
-          <input required inputMode="tel" autoComplete="tel" value={values.phone} onChange={(event) => update('phone', event.target.value)} />
-        </label>
-        <Button type="submit" disabled={!valid} className={!valid ? 'button-disabled' : ''}>Confirmar registro</Button>
-        <button type="button" className="presenter-helper" onClick={fillDemo}>llenar datos demo</button>
-      </form>
-    </div>
-  )
-}
-
-function Success({ go }: { go: (screen: MobileScreen) => void }) {
+function Success({ go, identity }: { go: (screen: MobileScreen) => void; identity: RegistrationValues }) {
   return (
     <div className="mobile-screen centered-screen">
       <Check className="success-check" size={48} />
       <h2>Tu Libreta está lista</h2>
-      <p>Identidad verificada · Actividad registrada</p>
-      <div className="time-box"><span>Tiempo de registro</span><strong>03:42</strong></div>
+      <p>Identidad verificada por el SEGIP · NIT creado en el SIN</p>
+      <div className="success-facts">
+        <div><span>Tu NIT</span><strong>{identity.nit}</strong></div>
+        <div><span>N° de trámite</span><b>{identity.tramite}</b></div>
+        <div><span>Tiempo de registro</span><b>{duration(identity.elapsedSeconds)}</b></div>
+      </div>
+      <p className="detail-note">Te enviamos tus credenciales del SIN a {identity.email}. NIT de demostración.</p>
       <Button onClick={() => go('wallet')}>Ver mi Libreta</Button>
     </div>
   )
@@ -302,9 +178,10 @@ function WalletCard({ profile = false, identity }: { profile?: boolean; identity
       <div className="eyebrow">ECONOMÍA PARA TODOS</div>
       <h3>{`${identity.firstName} ${identity.lastName}`.toUpperCase()}</h3>
       <p>{identity.activity} · {identity.municipality}, {identity.department}</p>
+      <div className="wallet-ids"><span>NIT <b>{identity.nit}</b></span><span>CAEB <b>{identity.activityCode}</b></span></div>
       <strong>Estado: {maria.programStatus.toUpperCase()} ✓</strong>
       <div className="qr"><QrCode aria-hidden="true" /><span>Credencial demo</span></div>
-      <small>{maria.id} · Miembro desde abril 2026</small>
+      <small>{maria.id} · Registrada el {longDate(identity.registeredAt)}</small>
     </div>
   )
 }
@@ -319,23 +196,36 @@ function Wallet({ onContinue, identity }: { onContinue: () => void; identity: Re
   )
 }
 
+const monthWords: Record<number, string> = { 1: 'Un mes', 2: 'Dos meses', 3: 'Tres meses', 4: 'Cuatro meses', 5: 'Cinco meses', 6: 'Seis meses' }
+
+/** Narrative bridge between registration (today) and Inicio, which shows months of formal history. */
+function TimeSkip({ onSkip }: { onSkip: () => void }) {
+  return (
+    <button type="button" className="time-skip" onClick={onSkip} aria-label="Continuar a Inicio">
+      <strong>{monthWords[maria.monthsInProgram] ?? `${maria.monthsInProgram} meses`} después…</strong>
+      <span>María vende, paga su aporte y construye su historial formal.</span>
+    </button>
+  )
+}
+
 function HomeScreen({ go, identity }: { go: (screen: MobileScreen) => void; identity: RegistrationValues }) {
+  const sales = parseAmount(identity.sales)
   return (
     <div className="mobile-screen home-screen">
       <h2>Buenos días, {identity.firstName}</h2>
       <strong className="section-label">Tu negocio</strong>
       <div className="mini-grid">
         <div><small>Estado</small><b>{maria.programStatus}</b></div>
-        <div><small>Ventas este mes</small><b>{money(maria.monthlySalesBs)}</b></div>
-        <div><small>Aporte del mes</small><b>{money(maria.contributionThisMonthBs)}</b></div>
+        <div><small>Ventas este mes</small><b>{money(sales)}</b></div>
+        <div><small>Aporte único del mes</small><b>{money(contributionFor(sales))}</b></div>
         <div><small>Historial formal</small><b>{maria.monthsInProgram} meses</b></div>
       </div>
       <button type="button" className="outline-cta" onClick={() => go('contribution')}>Ver cómo se utiliza mi aporte <ArrowRight size={17} /></button>
       <strong className="section-label">Tus beneficios</strong>
       <div className="benefits-grid">
         <MobileCard icon={CreditCard} title="Crédito" text={`Hasta ${money(maria.creditPrequalifiedBs)}`} onClick={() => go('credit')} />
-        <MobileCard icon={ShieldCheck} title="Protección" text="Seguro básico activo" onClick={() => go('protection')} />
-        <MobileCard icon={GraduationCap} title="Capacitación" text="Programas disponibles" onClick={() => go('training')} />
+        <MobileCard icon={ShieldCheck} title="Protección" text="Microseguro activo · SUS" onClick={() => go('protection')} />
+        <MobileCard icon={GraduationCap} title="Capacitación" text="1 certificado · 4 cursos" onClick={() => go('training')} />
         <MobileCard icon={BriefcaseBusiness} title="Oportunidades" text={`${maria.matchedOpportunityIds.length} disponibles`} onClick={() => go('opportunities')} />
       </div>
     </div>
@@ -346,10 +236,11 @@ function Detail({ title, children, go }: { title: string; children: React.ReactN
   return <div className="mobile-screen"><Back onClick={() => go('home')} /><h2>{title}</h2>{children}</div>
 }
 
-function Contribution({ go }: { go: (screen: MobileScreen) => void }) {
-  const contribution = maria.contributionThisMonthBs
+function Contribution({ go, identity }: { go: (screen: MobileScreen) => void; identity: RegistrationValues }) {
+  const sales = parseAmount(identity.sales)
+  const contribution = contributionFor(sales)
   const benefit = maria.benefitEstimateBs.total
-  const contributionWidth = `${(contribution / benefit) * 100}%`
+  const contributionWidth = `${Math.min(100, (contribution / benefit) * 100)}%`
   const benefitRows = [
     ['Mejores condiciones financieras', maria.benefitEstimateBs.financial],
     ['Protección', maria.benefitEstimateBs.protection],
@@ -359,7 +250,7 @@ function Contribution({ go }: { go: (screen: MobileScreen) => void }) {
 
   return (
     <Detail title="Mi aporte" go={go}>
-      <div className="highlight-box"><b>Este mes</b><span>Ventas registradas: {money(maria.monthlySalesBs)}</span></div>
+      <div className="highlight-box"><b>Este mes</b><span>Ventas registradas: {money(sales)}</span><span>Aporte único: 3% de tus ventas · reúne tus impuestos de pequeño negocio</span></div>
       <div className="comparison-chart" aria-label={`Comparación: aporte ${money(contribution)}, valor estimado recibido ${money(benefit)}`}>
         <div className="comparison-item">
           <div className="comparison-label"><span>Aporte</span><b>{money(contribution)}</b></div>
@@ -370,33 +261,10 @@ function Contribution({ go }: { go: (screen: MobileScreen) => void }) {
           <div className="comparison-track"><span className="benefit-bar" /></div>
         </div>
       </div>
-      <p className="comparison-note">Tu valor estimado recibido equivale a aproximadamente 1,9 veces tu aporte.</p>
+      <p className="comparison-note">Tu valor estimado recibido equivale a aproximadamente {new Intl.NumberFormat('es-BO', { maximumFractionDigits: 1 }).format(benefit / contribution)} veces tu aporte.</p>
       <h4>¿Qué incluye este valor estimado?</h4>
       {benefitRows.map(([label, value]) => <div className="benefit-row" key={label}><span>{label}</span><b>{money(value)}</b></div>)}
-    </Detail>
-  )
-}
-
-function Credit({ go, submitted, onSubmit }: { go: (screen: MobileScreen) => void; submitted: boolean; onSubmit: () => void }) {
-  return (
-    <Detail title="Crédito" go={go}>
-      <h4>Tu perfil financiero</h4>
-      <ul className="check-list">
-        {['Identidad verificada', 'Actividad económica', '4 meses de historial', 'Aportes al día', 'Ventas registradas'].map((item) => <li key={item}><Check size={16} />{item}</li>)}
-      </ul>
-      <div className="credit-box">
-        <small>Precalificación</small>
-        <strong>Hasta {money(maria.creditPrequalifiedBs)}</strong>
-        <span>Capital de trabajo · Maquinaria · Mejora del negocio</span>
-      </div>
-      {submitted ? (
-        <div className="inline-success" role="status" aria-live="polite">
-          <Check size={22} />
-          <div><strong>Solicitud enviada</strong><span>Tu solicitud quedó registrada para evaluación.</span></div>
-        </div>
-      ) : (
-        <Button onClick={onSubmit}>Solicitar evaluación</Button>
-      )}
+      <p className="detail-note">Aporte único: modelo propuesto del programa, no es una tasa tributaria vigente. Valores de demostración.</p>
     </Detail>
   )
 }
@@ -406,9 +274,12 @@ function Profile({ go, onPresent, identity }: { go: (screen: MobileScreen) => vo
     <Detail title="Mi perfil" go={go}>
       <WalletCard profile identity={identity} />
       <div className="profile-data">
-        <div><span>Actividad</span><strong>{identity.activity}</strong></div>
-        <div><span>Sector</span><strong>{maria.sector}</strong></div>
-        <div><span>Ubicación</span><strong>{identity.municipality}, {identity.department}</strong></div>
+        <div><span>NIT</span><strong>{identity.nit}</strong></div>
+        <div><span>Régimen</span><strong>Aporte único (propuesto)</strong></div>
+        <div><span>Actividad</span><strong>{identity.activity} · {identity.activityCode}</strong></div>
+        <div><span>Sector</span><strong>{identity.sector}</strong></div>
+        <div><span>Negocio</span><strong>{identity.zone}, {identity.municipality}</strong></div>
+        <div><span>Contacto</span><strong>{identity.phone} · {identity.email}</strong></div>
         <div><span>Estado</span><strong className="active-profile">{maria.programStatus}</strong></div>
       </div>
       <button type="button" className="presenter-helper profile-presenter-helper" onClick={onPresent}>Vista institucional</button>
@@ -422,7 +293,9 @@ type MobileExperienceProps = {
   creditSubmitted: boolean
   go: (screen: MobileScreen) => void
   onCompleteOnboarding: () => void
-  onSubmitCredit: () => void
+  onSubmitCredit: (authorizedBureau: boolean) => void
+  onUpdateIdentity: (patch: Partial<RegistrationValues>) => void
+  onSkipTime: () => void
   onTab: (value: 'home' | 'profile' | 'settings') => void
   onPresent: () => void
   completion: CourseCompletion
@@ -433,23 +306,24 @@ type MobileExperienceProps = {
   onRegister: (values: RegistrationValues) => void
 }
 
-function MobileExperience({ screen, onboardingCompleted, creditSubmitted, go, onCompleteOnboarding, onSubmitCredit, onTab, onPresent, completion, onToggleTopic, interests, onRegisterInterest, identity, onRegister }: MobileExperienceProps) {
+function MobileExperience({ screen, onboardingCompleted, creditSubmitted, go, onCompleteOnboarding, onSubmitCredit, onTab, onPresent, completion, onToggleTopic, interests, onRegisterInterest, identity, onRegister, onUpdateIdentity, onSkipTime }: MobileExperienceProps) {
   let content: React.ReactNode
 
   if (screen === 'landing') content = <Landing go={go} />
-  else if (screen === 'registration') content = <Registration onRegister={onRegister} />
-  else if (screen === 'success') content = <Success go={go} />
+  else if (screen === 'registration') content = <RegistrationFlow onRegister={onRegister} onExit={() => go('landing')} />
+  else if (screen === 'success') content = <Success go={go} identity={identity} />
   else if (screen === 'wallet') content = <Wallet onContinue={onCompleteOnboarding} identity={identity} />
+  else if (screen === 'timeskip') content = <TimeSkip onSkip={onSkipTime} />
   else if (screen === 'home') content = <HomeScreen go={go} identity={identity} />
-  else if (screen === 'contribution') content = <Contribution go={go} />
-  else if (screen === 'credit') content = <Credit go={go} submitted={creditSubmitted} onSubmit={onSubmitCredit} />
+  else if (screen === 'contribution') content = <Contribution go={go} identity={identity} />
+  else if (screen === 'credit') content = <Credit onBack={() => go('home')} identity={identity} submitted={creditSubmitted} onSubmit={onSubmitCredit} />
   else if (screen === 'protection') content = <Protection onBack={() => go('home')} />
-  else if (screen === 'training') content = <Training onBack={() => go('home')} completion={completion} onToggleTopic={onToggleTopic} />
+  else if (screen === 'training') content = <Training onBack={() => go('home')} completion={completion} onToggleTopic={onToggleTopic} cedula={identity.cedula} />
   else if (screen === 'opportunities') content = <Opportunities onBack={() => go('home')} interests={interests} onRegisterInterest={onRegisterInterest} />
   else if (screen === 'profile') content = <Profile go={go} onPresent={onPresent} identity={identity} />
-  else content = <Detail title="Ajustes" go={go}><div className="settings-list"><div><Phone size={18} /> Teléfono <span>Registrado</span></div><div><SlidersHorizontal size={18} /> Notificaciones <span>Activas</span></div></div></Detail>
+  else content = <Settings identity={identity} onBack={() => go('home')} onUpdate={onUpdateIdentity} />
 
-  const showNavigation = onboardingCompleted && !['landing', 'registration', 'success', 'wallet'].includes(screen)
+  const showNavigation = onboardingCompleted && !['landing', 'registration', 'success', 'wallet', 'timeskip'].includes(screen)
 
   return (
     <PhoneFrame
@@ -461,10 +335,6 @@ function MobileExperience({ screen, onboardingCompleted, creditSubmitted, go, on
       {content}
     </PhoneFrame>
   )
-}
-
-function KpiCard({ label, value }: { label: string; value: string }) {
-  return <div className="kpi-card"><span>{label}</span><strong>{value}</strong></div>
 }
 
 function Filter({ label, value, options, onChange }: { label: string; value: string; options: readonly string[]; onChange: (value: string) => void }) {
@@ -562,14 +432,6 @@ type DashboardProps = {
 function Dashboard({ tab, setTab, filters, setFilters, metricId, setMetricId, onReturnToMobile }: DashboardProps) {
   const metrics = useMemo(() => getDashboardMetrics(filters), [filters])
   const hasFilters = Object.values(filters).some((value) => value !== 'Todos')
-  const kpis = [
-    ['Personas registradas', number(metrics.registered)],
-    ['Contribuyentes activos', number(metrics.active)],
-    ['Recaudación', money(metrics.revenueBs)],
-    ['Capital movilizado', money(metrics.capitalMobilizedBs)],
-    ['Créditos otorgados', number(metrics.creditsGranted)],
-    ['Personas con protección', number(metrics.protected)],
-  ] as const
   const breadcrumbs = [
     'Bolivia',
     filters.department !== 'Todos' ? filters.department : null,
@@ -586,7 +448,7 @@ function Dashboard({ tab, setTab, filters, setFilters, metricId, setMetricId, on
     <main className="dashboard">
       <header className="dashboard-header">
         <div><div className="dashboard-brand">ECONOMÍA PARA TODOS</div><div className="dashboard-subtitle">Centro Nacional de Gestión</div></div>
-        <div className="dashboard-header-actions"><span>Datos de demostración</span><button type="button" onClick={onReturnToMobile}>Volver a la app móvil<ArrowRight size={14} /></button></div>
+        <div className="dashboard-header-actions"><span>Datos de demostración · corte al {cutOffLabel}</span><button type="button" onClick={onReturnToMobile}>Volver a la app móvil<ArrowRight size={14} /></button></div>
       </header>
       <div className="dashboard-tabs">
         <button type="button" className={tab === 'Resumen' ? 'active' : ''} onClick={() => setTab('Resumen')}>Resumen</button>
@@ -606,10 +468,11 @@ function Dashboard({ tab, setTab, filters, setFilters, metricId, setMetricId, on
         <>
           <div className="dashboard-layout">
             <section>
-              <div className="kpi-grid">{kpis.map(([label, value]) => <KpiCard label={label} value={value} key={label} />)}</div>
+              <KpiGrid metrics={metrics} filtered={hasFilters} />
             </section>
             <BoliviaMap selected={filters.department} onSelect={selectDepartment} filters={filters} />
           </div>
+          <FormalizationFunnel metrics={metrics} />
         </>
       ) : (
         <Performance metricId={metricId} setMetricId={setMetricId} filters={filters} />
@@ -699,9 +562,16 @@ export default function Home() {
     }
   }, [clearTransitionTimers, present, reset])
 
-  const completeOnboarding = () => {
+  const finishTimeSkip = useCallback(() => {
+    clearTransitionTimers()
     setOnboardingCompleted(true)
     setScreen('home')
+  }, [clearTransitionTimers])
+
+  const completeOnboarding = () => {
+    clearTransitionTimers()
+    setScreen('timeskip')
+    transitionTimers.current = [window.setTimeout(finishTimeSkip, 2600)]
   }
 
   return (
@@ -724,7 +594,12 @@ export default function Home() {
             creditSubmitted={creditSubmitted}
             go={setScreen}
             onCompleteOnboarding={completeOnboarding}
-            onSubmitCredit={() => setCreditSubmitted(true)}
+            onSubmitCredit={(authorizedBureau) => {
+              setCreditSubmitted(true)
+              if (authorizedBureau) setIdentity((current) => ({ ...current, consentCredit: true }))
+            }}
+            onSkipTime={finishTimeSkip}
+            onUpdateIdentity={(patch) => setIdentity((current) => ({ ...current, ...patch }))}
             identity={identity}
             onRegister={(values) => {
               setIdentity(values)

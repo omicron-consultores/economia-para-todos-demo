@@ -19,7 +19,7 @@ export const mockData = {
     "name": "Economía para Todos — Mock Dataset",
     "version": "1.0",
     "generatedFor": "Demo interactivo Chemonics",
-    "asOf": "2026-08-01",
+    "asOf": "2026-10-31",
     "language": "es-BO",
     "currency": "BOB",
     "isMockData": true,
@@ -26576,6 +26576,15 @@ export const mockData = {
     }
   ],
   "trainings": [
+    {
+      "id": "obligaciones-tributarias",
+      "title": "Tu NIT y tus obligaciones",
+      "duration": "30 min",
+      "format": "Microcurso",
+      "level": "Inicial",
+      "description": "Qué significa tener NIT, cómo se paga el aporte único y cómo usar tu Buzón Tributario.",
+      "mariaProgressPct": 100
+    },
     {
       "id": "educacion-financiera",
       "title": "Educación financiera para mi negocio",
