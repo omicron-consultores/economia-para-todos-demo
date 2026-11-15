@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, BadgeCheck, Check, ChevronDown, Fingerprint, IdCard, LoaderCircle, LocateFixed, MapPin, Search, Smartphone, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, Check, ChevronDown, Fingerprint, IdCard, LoaderCircle, LocateFixed, MapPin, Search, Smartphone, TriangleAlert, X } from 'lucide-react'
 import { Choice } from '@/components/choice'
-import { boliviaLocations, getMunicipalities } from '@/lib/bolivia-locations'
+import { boliviaLocations, getMunicipalities, municipalityCenter } from '@/lib/bolivia-locations'
 import {
   ANNUAL_SALES_LIMIT_BS, capitalRanges, contributionFor, createEmptyRegistration, demoActivityValues, demoBusiness,
   demoIdentity, demoLocation, demoNit, demoTramite, invoiceOptions, isValidCedula, isValidEmail, isValidPhone,
-  municipalityCenters, parseAmount, paymentOptions, searchActivities, sectorName, workerOptions,
+  parseAmount, paymentOptions, searchActivities, sectorName, workerOptions,
   type RegistrationValues, type VerificationMethod,
 } from '@/lib/registration'
 
@@ -27,8 +27,8 @@ const lookups = [
   { institution: 'Gestora Pública', label: 'Aportes de largo plazo', result: 'Sin aportes registrados', tone: 'info' },
 ] as const
 
-function PinMap({ municipality, lat, lng, onPick }: { municipality: string; lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void }) {
-  const center = municipalityCenters[municipality]
+function PinMap({ department, municipality, lat, lng, onPick }: { department: string; municipality: string; lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void }) {
+  const center = municipalityCenter(department, municipality)
   const width = 320
   const height = 170
   const spanLng = 0.02
@@ -232,7 +232,7 @@ export function RegistrationFlow({ onRegister, onExit }: { onRegister: (values: 
         {lookups.map((item, index) => {
           const ready = lookupProgress > index
           return <li key={item.institution} className={ready ? `is-${item.tone}` : ''}>
-            <span className="lookup-icon">{ready ? <Check size={16} /> : <LoaderCircle size={16} className="spin" />}</span>
+            <span className="lookup-icon">{ready ? (item.tone === 'ok' ? <Check size={16} /> : <X size={16} strokeWidth={1.75} />) : <LoaderCircle size={16} className="spin" />}</span>
             <div><small>{item.institution} · {item.label}</small><strong>{ready ? item.result : 'Consultando…'}</strong></div>
           </li>
         })}
@@ -284,7 +284,7 @@ export function RegistrationFlow({ onRegister, onExit }: { onRegister: (values: 
         </div>
         <label>Zona o barrio<input value={values.zone} onChange={(event) => update('zone', event.target.value)} /></label>
         <div className="ci-field"><span><MapPin size={14} /> Marca tu negocio en el mapa</span>
-          <PinMap municipality={values.municipality} lat={values.lat} lng={values.lng} onPick={(lat, lng) => setValues((current) => ({ ...current, lat, lng }))} />
+          <PinMap department={values.department} municipality={values.municipality} lat={values.lat} lng={values.lng} onPick={(lat, lng) => setValues((current) => ({ ...current, lat, lng }))} />
         </div>
         <label>¿Cómo se llega?<textarea rows={2} maxLength={500} placeholder="Ej.: frente al mercado, puerta verde" value={values.reference} onChange={(event) => update('reference', event.target.value)} /></label>
         <label className="checkbox-row">

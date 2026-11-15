@@ -95,7 +95,7 @@ export const paymentOptions = ['Efectivo', 'QR', 'Transferencia'] as const
 export const invoiceOptions = ['Sí', 'A veces', 'No'] as const
 
 /** Proposed program model (not current law): one monthly contribution. */
-export const CONTRIBUTION_RATE = 0.03
+export const CONTRIBUTION_RATE = 0.05
 export const ANNUAL_SALES_LIMIT_BS = 400000
 export const parseAmount = (value: string) => Number(value.replace(/\D/g, '')) || 0
 export const contributionFor = (monthlySalesBs: number) => Math.round(monthlySalesBs * CONTRIBUTION_RATE)
@@ -105,18 +105,6 @@ export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.t
 export const isValidCedula = (value: string) => /^\d{5,9}$/.test(value.trim())
 
 /** Approximate municipal centroids, used to place the map pin. */
-export const municipalityCenters: Record<string, [number, number]> = {
-  Trinidad: [-14.833, -64.9], Riberalta: [-11.0, -66.067], Guayaramerín: [-10.826, -65.357],
-  Sucre: [-19.047, -65.259], Monteagudo: [-19.799, -63.957], Camargo: [-20.64, -65.21],
-  Cochabamba: [-17.389, -66.157], Quillacollo: [-17.392, -66.278], Sacaba: [-17.398, -66.04],
-  'La Paz': [-16.5, -68.15], 'El Alto': [-16.51, -68.163], Viacha: [-16.654, -68.302], Achocalla: [-16.574, -68.165], Copacabana: [-16.166, -69.086],
-  Oruro: [-17.969, -67.115], Challapata: [-18.9, -66.774], Huanuni: [-18.289, -66.838],
-  Cobija: [-11.027, -68.769], Porvenir: [-11.25, -68.7], 'Puerto Rico': [-11.103, -67.553],
-  Potosí: [-19.583, -65.753], Uyuni: [-20.46, -66.825], Villazón: [-22.087, -65.596],
-  'Santa Cruz de la Sierra': [-17.784, -63.182], Montero: [-17.338, -63.25], Warnes: [-17.511, -63.166], Cotoca: [-17.753, -63.0],
-  Tarija: [-21.535, -64.729], Yacuiba: [-22.015, -63.678], Bermejo: [-22.732, -64.335],
-}
-
 /** Demo NIT: CI plus three check digits. The real SIN format is not public. */
 export const demoNit = (cedula: string) => `${cedula.trim()}01${(cedula.trim().split('').reduce((sum, digit) => sum + Number(digit), 0) % 10)}`
 export const demoTramite = (cedula: string) => `RNC-2026-${cedula.trim().slice(-5).padStart(5, '0')}`

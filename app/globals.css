@@ -233,11 +233,12 @@ button:active { transform: scale(.985); }
 .territory-bar-row > div:first-child { display: grid; grid-template-columns: 1fr 72px 48px; align-items: center; gap: 8px; font-size: 12px; }
 .territory-bar-row .status { text-align: left; }
 .territory-bar-row b { text-align: right; color: var(--navy-deep); }
-.territory-track { height: 7px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: #eceee8; }
+.territory-track { position: relative; height: 7px; margin-top: 5px; overflow: visible; border-radius: 999px; background: #eceee8; }
 .territory-track span { display: block; height: 100%; border-radius: inherit; }
 .territory-track span.green { background: var(--green); }
 .territory-track span.yellow { background: var(--gold); }
 .territory-track span.red { background: #c95d50; }
+.territory-track i { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--navy-deep); opacity: .55; }
 .transition-overlay { position: fixed; inset: 0; z-index: 20; background: var(--white); animation: fade-in .35s ease forwards; display: grid; place-items: center; }
 .transition-message { padding: 24px; text-align: center; font-size: clamp(28px, 4vw, 42px); font-weight: 900; letter-spacing: -.05em; color: var(--navy-deep); animation: message 1.8s ease both; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

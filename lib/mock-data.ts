@@ -14080,7 +14080,7 @@ export const mockData = {
       "monthsInProgram": 4,
       "identityVerified": true,
       "programStatus": "Activo",
-      "contributionThisMonthBs": 255,
+      "contributionThisMonthBs": 425,
       "contributionStatus": "Al día",
       "creditEligible": true,
       "creditPrequalifiedBs": 12000,
@@ -14101,11 +14101,11 @@ export const mockData = {
       ],
       "marketIntegrated": false,
       "benefitEstimateBs": {
-        "financial": 180,
-        "protection": 90,
-        "training": 75,
-        "marketAccess": 140,
-        "total": 485
+        "financial": 330,
+        "protection": 170,
+        "training": 120,
+        "marketAccess": 190,
+        "total": 810
       },
       "digitalConfidence": "Baja",
       "demoNotes": "Personaje principal del guion. Todos los valores son ficticios."

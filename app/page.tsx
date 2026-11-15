@@ -27,7 +27,7 @@ import { Settings } from '@/components/mobile-settings'
 import { cutOffLabel, FormalizationFunnel, KpiGrid } from '@/components/dashboard-summary'
 import { RegistrationFlow } from '@/components/registration-flow'
 import { createInitialCourseCompletion, type CourseCompletion } from '@/lib/mobile-details'
-import { contributionFor, demoRegistration, parseAmount, type RegistrationValues } from '@/lib/registration'
+import { CONTRIBUTION_RATE, contributionFor, demoRegistration, parseAmount, type RegistrationValues } from '@/lib/registration'
 import { getPerformanceBreakdown, getPerformanceMetrics } from '@/lib/performance-details'
 import {
   ageGroups,
@@ -250,7 +250,7 @@ function Contribution({ go, identity }: { go: (screen: MobileScreen) => void; id
 
   return (
     <Detail title="Mi aporte" go={go}>
-      <div className="highlight-box"><b>Este mes</b><span>Ventas registradas: {money(sales)}</span><span>Aporte único: 3% de tus ventas · reúne tus impuestos de pequeño negocio</span></div>
+      <div className="highlight-box"><b>Este mes</b><span>Ventas registradas: {money(sales)}</span><span>Aporte único: {CONTRIBUTION_RATE * 100}% de tus ventas · reúne tus impuestos de pequeño negocio</span></div>
       <div className="comparison-chart" aria-label={`Comparación: aporte ${money(contribution)}, valor estimado recibido ${money(benefit)}`}>
         <div className="comparison-item">
           <div className="comparison-label"><span>Aporte</span><b>{money(contribution)}</b></div>
@@ -394,13 +394,13 @@ function Performance({ metricId, setMetricId, filters }: { metricId: string | nu
             {breakdown && (
               <div className="territorial-comparison">
                 <h3>{breakdown.title}</h3>
-                <p>{breakdown.rows.length > 5 ? 'Los cinco resultados con mayor brecha. ' : 'Resultados de menor a mayor. '}Se mantienen los demás filtros activos.</p>
-                {breakdown.rows.slice(0, 5).map((row) => {
+                <p>Todos los resultados, de menor a mayor. La línea vertical marca el valor {filtered ? 'del ámbito seleccionado' : 'nacional'} ({selectedMetric.valuePct}%). Se mantienen los demás filtros activos.</p>
+                {breakdown.rows.map((row) => {
                   const status = row.status
                   return (
                     <div className="territory-bar-row" key={row.label}>
                       <div><strong>{row.label}</strong><span className={`status ${status}`}>{statusLabels[status]}</span><b>{row.valuePct}%</b></div>
-                      <div className="territory-track"><span className={status} style={{ width: `${row.valuePct}%` }} /></div>
+                      <div className="territory-track"><span className={status} style={{ width: `${row.valuePct}%` }} /><i style={{ left: `${selectedMetric.valuePct}%` }} aria-hidden="true" /></div>
                     </div>
                   )
                 })}

@@ -185,7 +185,7 @@ Agregar un curso **"Tu NIT y tus obligaciones (RTS)"** dictado por el NAF y emit
 
 ## 10. Decisiones tomadas (12/11/2026)
 
-1. **Modelo del aporte: B, aporte único del programa.** Una sola cifra mensual (3% de las ventas declaradas, es decir Bs 255 para María). Se rotula como **"modelo propuesto, no vigente"** e integra las obligaciones tributarias del programa.
+1. **Modelo del aporte: B, aporte único del programa.** Una sola cifra mensual (5% de las ventas declaradas, es decir Bs 425 para María; ajustado desde el 3% inicial el 15/11/2026). Se rotula como **"modelo propuesto, no vigente"** e integra las obligaciones tributarias del programa.
 2. **Entrada al registro: ambas.** El botón principal es "Ingresar con Ciudadanía Digital". La alternativa es "Usar mi carnet", que pide CI, complemento y fecha de nacimiento y los contrasta con el SEGIP.
 3. **Alcance: registro en 6 pasos cortos.** "llenar datos demo" completa cada paso para mantener el ritmo de la presentación.
 4. **Nombres: instituciones reales, productos genéricos.** Se nombran el SIN, SEGIP, BDP, Gestora, SEPREC y SICOES. Los productos llevan nombres genéricos, por ejemplo "Crédito productivo BDP".
